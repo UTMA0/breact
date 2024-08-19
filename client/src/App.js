@@ -5,11 +5,13 @@ function App() {
   const [videoUrl, setVideoUrl] = useState('');
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setTranscript('');
+    setIsLoading(true);
 
     try {
       const videoId = extractVideoId(videoUrl);
@@ -17,10 +19,12 @@ function App() {
         throw new Error('Invalid YouTube URL');
       }
 
-      const response = await axios.post('http://localhost:5000/api/transcript', { videoId });
+      const response = await axios.post('/api/transcript', { videoId });
       setTranscript(response.data.transcript.join('\n'));
     } catch (error) {
-      setError(error.message);
+      setError(error.response?.data?.error || error.message || 'An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -40,9 +44,12 @@ function App() {
           onChange={(e) => setVideoUrl(e.target.value)}
           placeholder="Enter YouTube video URL"
         />
-        <button type="submit">Get Transcript</button>
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? 'Loading...' : 'Get Transcript'}
+        </button>
       </form>
       {error && <p style={{ color: 'red' }}>{error}</p>}
+      {isLoading && <p>Fetching transcript...</p>}
       {transcript && (
         <div>
           <h2>Transcript:</h2>
